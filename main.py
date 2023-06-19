@@ -2,10 +2,13 @@ from fastapi import FastAPI, Depends, Request
 from models import InputUser,CreateUpdateInput
 import os
 from sqlalchemy.orm import Session
-from mlflow.sklearn import load_model
+from mlflow.prophet import load_model
 from database import engine, get_db, create_db_and_tables
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time
+from datetime import timedelta
+import pytz
+
 
 # Tell where is the tracking server and artifact server
 os.environ['MLFLOW_TRACKING_URI'] = 'http://localhost:5001/'
@@ -27,31 +30,34 @@ create_db_and_tables()
 # Note that model will coming from mlflow
 def makePrediction(model, request):
     # parse input from request
-    begining_date = request["begining_date"]
+    begining_date_str = request["begining_date"]
     time = request["time"]
-    finish_date = request["finish_date"]
+    finish_date_str = request["finish_date"]
     
-    begining_date = datetime.combine(begining_date,time)
+    # Convert beginning_date_str, time_str, and finish_date_str to datetime objects
+    beginning_date = datetime.strptime(begining_date_str + " " +time, "%Y-%m-%d %H:%M:%S")
+    finish_date = datetime.strptime(finish_date_str + " " +time, "%Y-%m-%d %H:%M:%S")
     
-    finish_date = datetime.combine(finish_date,time)
+    #finish_date = beginning_date + timedelta(days=5)
     
-    df = pd.DataFrame({"ds" : pd.date_range(begining_date,finish_date)})
+    df = pd.DataFrame({"ds" : pd.date_range(beginning_date,finish_date)})
 
     # Make an input vector
     features = df
-
+    print(model)
     # Predict
     prediction = model.predict(features)
-
-    return prediction[0]
+    #prediction = 80
+    return prediction
 
 
 
 # Insert Prediction information
 def insertRequest(request, prediction, client_ip, db):
     newRequest = CreateUpdateInput(
-        Age = request["begining_date"],
-        CreditScore = request["finish_date"],
+        begining_date = request["begining_date"],
+        finish_date = request["finish_date"],
+        time = request["time"],
         prediction=prediction,
         client_ip=client_ip
     )

@@ -26,6 +26,7 @@ def edit_and_get_data():
     data['y'] = data['y'].str.replace('.', '')
     data['y'] = data['y'].str.replace(',', '.')
     data['y'] = data['y'].astype(float)
+    print(data.head())
 
     return data
 
