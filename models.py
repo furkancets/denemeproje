@@ -27,7 +27,24 @@ class InputUser(SQLModel):
         schema_extra = {
             "example": {
                 "begining_date": "2023-01-07",
-                "finish_date": "2023-01-12",
+                "finish_date": "2023-01-08",
                 "time": "05:00:00"
             }
         }
+        
+class InputUserFive(SQLModel):
+    
+    begining_date: str
+    finish_date: str
+    time: str 
+
+    class Config:
+        
+        schema_extra = {
+            "example": {
+                "begining_date": "2023-01-07",
+                "finish_date": "2023-01-12",
+                "time": "07:00:00"
+            }
+        }
+

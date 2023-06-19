@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, Request
-from models import InputUser,CreateUpdateInput
+from models import InputUser,CreateUpdateInput, InputUserFive
 import os
 from sqlalchemy.orm import Session
 from mlflow.prophet import load_model
@@ -46,7 +46,7 @@ def makePrediction(model, request):
     features = df
     print(model)
     # Predict
-    prediction = model.predict(features)
+    prediction = model.predict(features) 
     #prediction = 80
     return prediction
 
@@ -72,7 +72,17 @@ def insertRequest(request, prediction, client_ip, db):
 
 
 # Electirical Price Prediction endpoint
-@app.post("/electric/prediction")
+@app.post("/electric/prediction/fivedays")
+async def predictPrice(request: InputUserFive, fastapi_req: Request,  db: Session = Depends(get_db)):
+    prediction = makePrediction(model, request.dict())
+    db_insert_record = insertRequest(request=request.dict(), prediction=prediction,
+                                          client_ip=fastapi_req.client.host,
+                                          db=db)
+    return {"prediction": prediction, "db_record": db_insert_record}
+
+
+# Electirical Price Prediction endpoint
+@app.post("/electric/prediction/days")
 async def predictPrice(request: InputUser, fastapi_req: Request,  db: Session = Depends(get_db)):
     prediction = makePrediction(model, request.dict())
     db_insert_record = insertRequest(request=request.dict(), prediction=prediction,
