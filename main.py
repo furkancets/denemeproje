@@ -8,7 +8,8 @@ import pandas as pd
 from datetime import datetime, time
 from datetime import timedelta
 import pytz
-
+from prophet import serialize
+import json
 
 # Tell where is the tracking server and artifact server
 os.environ['MLFLOW_TRACKING_URI'] = 'http://localhost:5001/'
@@ -20,6 +21,8 @@ model_version = 1
 model = load_model(
     model_uri=f"models:/{model_name}/{model_version}"
 )
+params={attr: getattr(model, attr) for attr in serialize.SIMPLE_ATTRIBUTES}
+print(params)
 
 app = FastAPI()
 
@@ -40,16 +43,30 @@ def makePrediction(model, request):
     
     #finish_date = beginning_date + timedelta(days=5)
     
-    df = pd.DataFrame({"ds" : pd.date_range(beginning_date,finish_date)})
-
+    df = pd.DataFrame({"ds" : pd.date_range(beginning_date,finish_date, freq="H")})
+    #df = pd.DataFrame({"ds" : pd.date_range("2023-05-01 10:00","2023-05-03 10:00",freq="H")})
+    print(df.head())
     # Make an input vector
     features = df
-    print(model)
+    #print(model)
     # Predict
-    prediction = model.predict(features) 
-    #prediction = 80
-    return prediction
-
+    prediction = model.predict(features)
+    prediction['date'] = prediction['ds'].dt.date
+    prediction['hour'] = prediction['ds'].dt.hour
+    daily_average = prediction.groupby(['date'])['yhat'].median()
+    print(daily_average)
+    print(type(daily_average))
+    daily_average = daily_average.reset_index()
+    daily_average = daily_average.rename(columns={'yhat': 'y'})
+    daily_average = daily_average.rename(columns={'date': 'd'})
+    print(daily_average)
+    print(type(daily_average))
+    daily_average["d"] = daily_average["d"].astype(str)
+    daily_average['y'] = daily_average['y'].round(2)
+    print(daily_average)
+    pred_dict = daily_average[["d","y"]].to_dict(orient="records")
+    print(pred_dict)
+    return json.dumps(pred_dict)
 
 
 # Insert Prediction information

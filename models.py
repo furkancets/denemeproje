@@ -3,6 +3,9 @@ from typing import Optional
 from datetime import datetime
 import pandas as pd
 from datetime import timedelta
+#from sqlmodel.sql.sqltypes import Char
+from sqlalchemy import String
+#from sqlalchemy.types import Boolean, Date, DateTime, Float, Integer, Text, Time, Interval
 
 
 class CreateUpdateInput(SQLModel, table=True):
@@ -10,7 +13,7 @@ class CreateUpdateInput(SQLModel, table=True):
     begining_date: str
     time: str
     finish_date: str
-    prediction: str
+    prediction: str 
     prediction_time: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     client_ip: str
     
